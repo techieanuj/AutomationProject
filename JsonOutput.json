@@ -1,0 +1,62 @@
+[
+	{
+		"Domain": "amazon.com",
+		"Market": "en-us",
+		"Coupons": [
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+		]
+
+	},
+
+	{
+		"Domain": "macys.com",
+		"Market": "pt-br",
+		"Coupons": [
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+
+			{
+				"Couponcode": "Abc",
+				"CouponDescription": "Abbsass",
+				"publisTime": "Time string in UTC",
+				"expiryTime" "",
+				"Attribution": "EdgeCrawled"
+			},
+		]
+	},
+]
