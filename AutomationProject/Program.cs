@@ -15,13 +15,17 @@ namespace AutomationProject
 {
     internal class Program
     {
-        public const string mappingFile = @"PoolMarketMapping.txt";
-        public const string excelDataSource = @"GetHoneyCoupons.xlsx";
-        public const string tsvDataSource = @"final_output_pool";
+        //public const string mappingFile = @"PoolMarketMapping.txt";
+        //public const string excelDataSource = @"GetHoneyCoupons.xlsx";
+        //public const string tsvDataSource = @"final_output_pool";
         static void Main(string[] args)
         {
             try
             {
+                string mappingFile = Convert.ToString(args[0]);
+                string excelFile = Convert.ToString(args[1]);
+                string filePath = Convert.ToString(args[2]);
+
                 FileStream fs = new FileStream(mappingFile, FileMode.Open, FileAccess.Read);
                 DataTable dtResults = new DataTable();
                 using (StreamReader sr = new StreamReader(fs))
@@ -32,20 +36,20 @@ namespace AutomationProject
                         string[] poolMapping = mappingFileContent.Split('\t');
                         if (dtResults.Rows.Count == 0)
                         {
-                            dtResults = ReadExcel(poolMapping[1]);
+                            dtResults = ReadExcel(excelFile, poolMapping[1]);
                         }
                         else
                         {
-                            dtResults.Merge(ReadExcel(poolMapping[1]));
+                            dtResults.Merge(ReadExcel(excelFile, poolMapping[1]));
                         }
 
                         if (dtResults.Rows.Count == 0)
                         {
-                            dtResults = ReadTSV(poolMapping[0], poolMapping[1]);
+                            dtResults = ReadTSV(filePath, poolMapping[0], poolMapping[1]);
                         }
                         else
                         {
-                            dtResults.Merge(ReadTSV(poolMapping[0], poolMapping[1]));
+                            dtResults.Merge(ReadTSV(filePath, poolMapping[0], poolMapping[1]));
                         }
                     }
                 }
@@ -124,9 +128,9 @@ namespace AutomationProject
         }
 
         // Method to read the TSV file
-        public static DataTable ReadTSV(string fileNumber, string LanguageCode)
+        public static DataTable ReadTSV(string tsvFilePath, string fileNumber, string LanguageCode)
         {
-            string filePath = $@"{tsvDataSource}_{fileNumber}.tsv";
+            string filePath = $@"{tsvFilePath}_{fileNumber}.tsv";
             int count = 0;
             DataTable dt = new DataTable();
             if (File.Exists(filePath))
@@ -235,11 +239,11 @@ namespace AutomationProject
         //}
 
         // Method to read the data from the Excel file
-        public static DataTable ReadExcel(string LanguageCode)
+        public static DataTable ReadExcel(string excelFile, string LanguageCode)
         {
             Excel.Application _Excel = new Excel.Application();
 
-            string filepath = excelDataSource;
+            string filepath = excelFile;
 
             Excel.Workbook workBook = _Excel.Workbooks.Open(filepath);
 
