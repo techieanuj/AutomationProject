@@ -15,44 +15,21 @@ namespace AutomationProject
 {
     internal class Program
     {
-        //public const string mappingFile = @"PoolMarketMapping.txt";
-        //public const string excelDataSource = @"GetHoneyCoupons.xlsx";
-        //public const string tsvDataSource = @"final_output_pool";
         static void Main(string[] args)
         {
             try
             {
-                string mappingFile = Convert.ToString(args[0]);
+                string poolMappingFile = Convert.ToString(args[0]);
                 string excelFile = Convert.ToString(args[1]);
-                string filePath = Convert.ToString(args[2]);
+                string tsvFile = Convert.ToString(args[2]);
 
-                FileStream fs = new FileStream(mappingFile, FileMode.Open, FileAccess.Read);
                 DataTable dtResults = new DataTable();
-                using (StreamReader sr = new StreamReader(fs))
-                {
-                    string mappingFileContent = string.Empty;
-                    while ((mappingFileContent = sr.ReadLine()) != null)
-                    {
-                        string[] poolMapping = mappingFileContent.Split('\t');
-                        if (dtResults.Rows.Count == 0)
-                        {
-                            dtResults = ReadExcel(excelFile, poolMapping[1]);
-                        }
-                        else
-                        {
-                            dtResults.Merge(ReadExcel(excelFile, poolMapping[1]));
-                        }
-
-                        if (dtResults.Rows.Count == 0)
-                        {
-                            dtResults = ReadTSV(filePath, poolMapping[0], poolMapping[1]);
-                        }
-                        else
-                        {
-                            dtResults.Merge(ReadTSV(filePath, poolMapping[0], poolMapping[1]));
-                        }
-                    }
-                }
+                
+                // Read the Excel file first
+                dtResults = ReadExcel(excelFile);
+                
+                // Read the TSV file next
+                dtResults.Merge(ReadTSV(tsvFile, poolMappingFile));
 
 
                 // Sort results in ascending order and and order by language code
@@ -127,27 +104,45 @@ namespace AutomationProject
             }
         }
 
-        // Method to read the TSV file
-        public static DataTable ReadTSV(string tsvFilePath, string fileNumber, string LanguageCode)
+        // Method to read data from the TSV file
+        public static DataTable ReadTSV(string tsvFile, string poolMappingFile)
         {
-            string filePath = $@"{tsvFilePath}_{fileNumber}.tsv";
             int count = 0;
             DataTable dt = new DataTable();
-            if (File.Exists(filePath))
+            if (File.Exists(tsvFile))
             {
-                using(TextReader tr = File.OpenText(filePath))
+                string[] filename = tsvFile.Split('_');
+                string LanguageCode = string.Empty;
+                int poolId = Convert.ToInt32(filename[filename.Length - 1].Split('.')[0]);
+                FileStream fs = new FileStream(poolMappingFile, FileMode.Open, FileAccess.Read);
+                Dictionary<int, string> poolMapping = new Dictionary<int, string>();
+                using (StreamReader sr = new StreamReader(fs))
+                {
+                    string mappingFileContent = string.Empty;
+                    while ((mappingFileContent = sr.ReadLine()) != null)
+                    {
+                        string[] mappingString = mappingFileContent.Split('\t');
+                        if (poolId == Convert.ToInt32(mappingString[0]))
+                        {
+                            LanguageCode = mappingString[1];
+                            break;
+                        }
+                    }
+                }
+
+                using(TextReader tr = File.OpenText(tsvFile))
                 {
                     string line;
                     while((line= tr.ReadLine()) != null)
                     {
                         string[] items = line.Split('\t');
-                        if(dt.Columns.Count == 0 && count == 0)
+                        if (dt.Columns.Count == 0 && count == 0)
                         {
                             // Create the data columns for the data table based on the number of items
                             // on the first line of the file
-                            for(int i=0; i<items.Length; i++)
+                            for (int i = 0; i < items.Length; i++)
                             {
-                                if(i == 1)
+                                if (i == 1)
                                 {
                                     dt.Columns.Add(new DataColumn("Description", typeof(string)));
                                 }
@@ -168,7 +163,7 @@ namespace AutomationProject
                         {
                             int columnsLength = line.Split('\t').Length;
                             dt.Rows.Add();
-                            if(columnsLength < 18)
+                            if (columnsLength < 18)
                             {
                                 string completeLine = line + " " + tr.ReadLine();
                                 // handle the line break as seen in the input file where the description breaks into the next line
@@ -184,7 +179,7 @@ namespace AutomationProject
                                     {
                                         dt.Rows[count][2] = completeLine.Split('\t')[6];    // Retailer
                                     }
-                                    
+
                                 }
                             }
                             else
@@ -207,79 +202,68 @@ namespace AutomationProject
                         }
                     }
 
-                    DataView dv = new DataView(dt);
-                    DataTable dt2 = dv.ToTable(true, "Description", "Code", "Retailers");
-                    dt = dt2.DefaultView.ToTable();
+                        DataView dv = new DataView(dt);
+                        DataTable dt2 = dv.ToTable(true, "Description", "Code", "Retailers");
+                        dt = dt2.DefaultView.ToTable();
                 }
             }
             return dt;
         }
 
-        //public static DataTable ReadExcel1(string worksheetName)
-        //{
-        //    DataTable dtExcel = new DataTable();
-        //    if (File.Exists(excelDataSource))
-        //    {
-        //        dtExcel.TableName = "ExcelData";
-        //        string sourceConnection = $@"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={excelDataSource};Extended Properties='Excel 12.0 Xml; HDR = YES'";
-
-        //        OleDbConnection conn = new OleDbConnection(sourceConnection);
-        //        string query = $"Select Description, Code, Retailers from [{worksheetName}$]";
-        //        OleDbDataAdapter data = new OleDbDataAdapter(query, conn);
-
-        //        data.Fill(dtExcel);
-        //        DataView dv = new DataView(dtExcel);
-        //        dv.RowFilter = "Code <> ''";
-        //        dtExcel = dv.ToTable(true, "Description", "Code", "Retailers");
-        //        DataColumn dataColumn = new DataColumn("LanguageCode");
-        //        dataColumn.DefaultValue = worksheetName;
-        //        dtExcel.Columns.Add(dataColumn);
-        //    }
-        //    return dtExcel;
-        //}
-
         // Method to read the data from the Excel file
-        public static DataTable ReadExcel(string excelFile, string LanguageCode)
+        public static DataTable ReadExcel(string excelFile)
         {
             Excel.Application _Excel = new Excel.Application();
 
             string filepath = excelFile;
 
             Excel.Workbook workBook = _Excel.Workbooks.Open(filepath);
+                       
+            String[] excelSheets = new String[workBook.Worksheets.Count];
 
-            // get the workbookname  
-            string ExcelWorkbookname = workBook.Name;
-
-            Excel.Worksheet worksheet = (Excel.Worksheet)workBook.Worksheets[LanguageCode];
-
-            int totalRows = worksheet.UsedRange.Rows.Count;
-
-            DataTable dt = new DataTable();
-            dt.Columns.Add(new DataColumn("Description", typeof(string)));
-            dt.Columns.Add(new DataColumn("Code", typeof(string)));
-            dt.Columns.Add(new DataColumn("Retailers", typeof(string)));
-            DataColumn dataColumn = new DataColumn("LanguageCode");
-            dataColumn.DefaultValue = LanguageCode;
-            dt.Columns.Add(dataColumn);
-            int count = 0;
-            // start adding records from the worksheet to the Data Table
-            for (int i = 2; i < totalRows; i++)
+            DataTable dtMarkets = new DataTable();
+            foreach (Excel.Worksheet worksheet in workBook.Worksheets)
             {
-                if(!String.IsNullOrEmpty(((Excel.Range)worksheet.Cells[i, 2]).Value) && !String.IsNullOrEmpty(((Excel.Range)worksheet.Cells[i, 3]).Value))
+                string worksheetName = worksheet.Name;
+                int totalRows = worksheet.UsedRange.Rows.Count;
+
+                DataTable dt = new DataTable();
+                dt.Columns.Add(new DataColumn("Description", typeof(string)));
+                dt.Columns.Add(new DataColumn("Code", typeof(string)));
+                dt.Columns.Add(new DataColumn("Retailers", typeof(string)));
+                DataColumn dataColumn = new DataColumn("LanguageCode");
+                dataColumn.DefaultValue = worksheetName;
+                dt.Columns.Add(dataColumn);
+                int count = 0;
+                // start adding records from the worksheet to the Data Table
+                for (int i = 2; i < totalRows; i++)
                 {
-                    dt.Rows.Add();
-                    string retailer = ((Excel.Range)worksheet.Cells[i, 2]).Value;
-                    string code = ((Excel.Range)worksheet.Cells[i, 3]).Value;
-                    string description = ((Excel.Range)worksheet.Cells[i, 4]).Value;
-                    dt.Rows[count][0] = description;
-                    dt.Rows[count][1] = code;
-                    dt.Rows[count][2] = retailer;
-                    count++;
+                    if (!String.IsNullOrEmpty(((Excel.Range)worksheet.Cells[i, 2]).Value) && !String.IsNullOrEmpty(((Excel.Range)worksheet.Cells[i, 3]).Value))
+                    {
+                        dt.Rows.Add();
+                        string retailer = ((Excel.Range)worksheet.Cells[i, 2]).Value;
+                        string code = ((Excel.Range)worksheet.Cells[i, 3]).Value;
+                        string description = ((Excel.Range)worksheet.Cells[i, 4]).Value;
+                        dt.Rows[count][0] = description;
+                        dt.Rows[count][1] = code;
+                        dt.Rows[count][2] = retailer;
+                        count++;
+                    }
+                }
+
+                if (dtMarkets.Rows.Count == 0)
+                {
+                    dtMarkets = dt;
+                }
+                else
+                {
+                    dtMarkets.Merge(dt);
                 }
             }
-            DataView dv = new DataView(dt);
-            dt = dv.ToTable(true, "Description", "Code", "Retailers", "LanguageCode");
-            return dt;
+
+            DataView dv = new DataView(dtMarkets);
+            dtMarkets = dv.ToTable(true, "Description", "Code", "Retailers", "LanguageCode");
+            return dtMarkets;
         }
     }
 }
